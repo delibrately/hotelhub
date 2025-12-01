@@ -46,6 +46,7 @@ HotelHub is a comprehensive hotel management system developed using Django, a hi
    ```
 2. setup:
    ```
+   pip install -r requirements.txt
    python manage.py makemigrations
    python manage.py migrate
    python manage.py runserver 0.0.0.0:8000

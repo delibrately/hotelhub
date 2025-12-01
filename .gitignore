@@ -19,7 +19,7 @@ db.sqlite3
 local_settings.py
 
 # Ignore the Django migration history
-**/migrations/
+
 
 # Ignore the IDE configuration files
 .vscode/
