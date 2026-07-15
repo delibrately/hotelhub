@@ -4,22 +4,28 @@
 
 {% block content %}
   <h2 class="titlex">Room List</h2>
+  {% if perms.room.add_room %}
+    <a href="{% url 'room_create' %}" class="linkx">Add Room</a>
+  {% endif %}
   <table>
     <thead>
       <tr>
         <th>Room No.</th>
         <th>Type</th>
         <th>Status</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for room in rooms %}
       <tr>
-        <td><a class="linky"href="{% url 'room_detail' room.pk %}">{{ room.room_number }} </td>
+        <td><a class="linky" href="{% url 'room_detail' room.pk %}">{{ room.room_number }}</a></td>
         <td>{{ room.room_type }} </td> 
-        <td>{% if room.is_booked_now %}<span style="color:red;">Booked</span>{% else %}<span style="color:green;">Available</span>{% endif %} </a></td>
+        <td>{% if room.is_booked_now %}<span style="color:red;">Booked</span>{% else %}<span style="color:green;">Available</span>{% endif %}</td>
+        <td>{% if perms.room.change_room %}<a class="linky" href="{% url 'room_update' room.pk %}">Update</a>{% endif %}</td>
+      </tr>
         {% empty %}
-        <p>No Record found! <a href="{% url 'room_create' %}" class="linky">Add Room </a></p>
+        <tr><td colspan="4">No rooms found.</td></tr>
         {% endfor %}
     </tbody>
   </table>

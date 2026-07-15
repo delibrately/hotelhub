@@ -4,11 +4,14 @@
 
 {% block content %}
   <h2 class="titlex">Guest List</h2>
+  {% if perms.guest.add_guest %}
+    <a href="{% url 'guest_create' %}" class="linkx">Add Guest</a>
+  {% endif %}
   <ul class="listx">
     {% for guest in guests %}
       <li class="itemx"><a class="linky" href="{% url 'guest_detail' guest.pk %}">{{ guest.id }} | {{ guest.first_name }} {{ guest.last_name }}</a></li>
     {% empty %}
-    <p>No Record found! <a href="{% url 'guest_create' %}" class="linky">Add Guest </a></p>
+    <li>No guests found.</li>
       {% endfor %}
   </ul>
 {% endblock content %}

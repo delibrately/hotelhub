@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Operation Logs{% endblock title %}
+
+{% block content %}
+  <h2 class="titlex">Administrator Operation Logs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Operator</th>
+        <th>Action</th>
+        <th>Target</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for operation_log in operation_logs %}
+        <tr>
+          <td>{{ operation_log.created_at }}</td>
+          <td>{{ operation_log.operator|default:"Deleted user" }}</td>
+          <td>{{ operation_log.get_action_display }}</td>
+          <td>{{ operation_log.get_target_type_display }} #{{ operation_log.target_id }}</td>
+          <td>{{ operation_log.description }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No operation logs found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock content %}

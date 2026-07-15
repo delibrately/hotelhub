@@ -1,5 +1,6 @@
 # Virtual environment
 venv/
+.venv/
 
 # Byte-compiled files
 *.pyc
@@ -12,8 +13,16 @@ media/
 # Database files
 db.sqlite3
 
+# Environment and deployment secrets
+.env
+.env.*
+!.env.example
+
 # Log files
 *.log
+
+# Collected static files
+staticfiles/
 
 # Ignore the local settings file
 local_settings.py

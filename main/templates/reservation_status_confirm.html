@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action_label }}{% endblock title %}
+
+{% block content %}
+  <h2 class="titlex">{{ action_label }}</h2>
+  <p>Reservation #{{ reservation.pk }}</p>
+  <p>Current status: {{ reservation.get_status_display }}</p>
+  <p>Check-in: {{ reservation.check_in_date }}</p>
+  <p>Check-out: {{ reservation.check_out_date }}</p>
+  <p>Please confirm this operation.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="submit" value="Confirm {{ action_label }}">
+  </form>
+  <a class="linkx" href="{% url 'reservation_detail' reservation.pk %}">Back</a>
+{% endblock content %}

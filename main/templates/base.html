@@ -14,14 +14,17 @@
 
 <nav>
     <ul>
-        <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
         {% if user.is_authenticated %}
-        <li><a href="{% url 'room_list' %}">Room List</a></li>
-        <li><a href="{% url 'guest_list' %}">Guest List</a></li>
-        <li><a href="{% url 'reservation_list' %}">reservation List</a></li>
-        <li><a href="{% url 'room_create' %}">Create Room</a></li>
-        <li><a href="{% url 'guest_create' %}">Create Guest</a></li>
-        <li><a href="{% url 'reservation_create' %}">Create Reservation</a></li>
+        {% if user.is_staff %}
+        <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        {% if perms.room.view_room %}<li><a href="{% url 'room_list' %}">Room List</a></li>{% endif %}
+        {% if perms.guest.view_guest %}<li><a href="{% url 'guest_list' %}">Guest List</a></li>{% endif %}
+        {% if perms.main.view_reservation %}<li><a href="{% url 'reservation_list' %}">Reservation List</a></li>{% endif %}
+        {% if perms.main.view_adminoperationlog %}<li><a href="{% url 'operation_log_list' %}">Operation Logs</a></li>{% endif %}
+        {% if perms.room.add_room %}<li><a href="{% url 'room_create' %}">Create Room</a></li>{% endif %}
+        {% if perms.guest.add_guest %}<li><a href="{% url 'guest_create' %}">Create Guest</a></li>{% endif %}
+        {% if perms.main.add_reservation %}<li><a href="{% url 'reservation_create' %}">Create Reservation</a></li>{% endif %}
+        {% endif %}
         <li><a href="{% url 'profile' %}">Profile</a></li>
         <li><form action="{% url 'logout' %}" method="POST" style="display:inline;">
     {% csrf_token %}
@@ -36,6 +39,13 @@
 
 
     <main>
+        {% if messages %}
+          <ul class="messages">
+            {% for message in messages %}
+              <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
         {% block content %}
         {% endblock %}
         {% block pagination %}
@@ -44,12 +54,12 @@
 
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ request.path }}?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                    <a class="page-link" href="{{ request.path }}?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="{{ request.path }}?page={{ page_obj.previous_page_number }}">
+                    <a class="page-link" href="{{ request.path }}?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">
                         {{ page_obj.previous_page_number }}
                     </a>
                 </li>
@@ -63,12 +73,12 @@
 
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ request.path }}?page={{ page_obj.next_page_number }}">
+                    <a class="page-link" href="{{ request.path }}?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}">
                         {{ page_obj.next_page_number }}
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="{{ request.path }}?page={{ page_obj.next_page_number }}" aria-label="Next">
+                    <a class="page-link" href="{{ request.path }}?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>

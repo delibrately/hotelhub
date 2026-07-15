@@ -7,8 +7,17 @@
   <h2 class="titlex">Reservation Detail</h2>
   <p>Room: {{ reservation.room.room_number }}</p>
   <p>Guest: {{ reservation.guest.first_name }}</p>
+  <p>Status: {{ reservation.get_status_display }}</p>
   <p>Check-in Date: {{ reservation.check_in_date }}</p>
   <p>Check-out Date: {{ reservation.check_out_date }}</p>
   <p>Additional Details : {{ reservation.additional|linebreaks }}</p>
+  {% if perms.main.change_reservation %}
   <a class="linkx" href="{% url 'reservation_update' reservation.id %}">Update</a>
+  {% endif %}
+  {% if can_manage_status and status_actions %}
+    <h3 class="titlex">Status Actions</h3>
+    {% for action in status_actions %}
+      <a class="linkx" href="{{ action.url }}">{{ action.label }}</a>
+    {% endfor %}
+  {% endif %}
   {% endblock %}

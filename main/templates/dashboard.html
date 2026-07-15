@@ -4,20 +4,50 @@
   <h2 class="titlex">Welcome to the HotelHub</h2>
 
   <div class="dashboard">
+    {% if can_view_rooms %}
     <div class="card">
         <h2 class="titlex">Rooms</h2>
         <p>{{ total_rooms }}</p>
     </div>
+    {% endif %}
 
+    {% if can_view_guests %}
     <div class="card">
         <h2 class="titlex">Total Guests</h2>
         <p>{{ total_guests }}</p>
     </div>
+    {% endif %}
 
+    {% if can_view_reservations %}
     <div class="card">
         <h2 class="titlex"> Total Reservations </h2>
         <p>{{ total_reservations }}</p>
     </div>
+    <div class="card">
+        <h2 class="titlex">待确认订单</h2>
+        <p>{{ pending_reservations }}</p>
+    </div>
+    <div class="card">
+        <h2 class="titlex">已确认订单</h2>
+        <p>{{ confirmed_reservations }}</p>
+    </div>
+    <div class="card">
+        <h2 class="titlex">今日计划入住</h2>
+        <p>{{ today_check_ins }}</p>
+    </div>
+    <div class="card">
+        <h2 class="titlex">今日计划退房</h2>
+        <p>{{ today_check_outs }}</p>
+    </div>
+    <div class="card">
+        <h2 class="titlex">当前已入住</h2>
+        <p>{{ current_checked_in }}</p>
+    </div>
+    {% endif %}
 </div>
+
+{% if not can_view_rooms and not can_view_guests and not can_view_reservations %}
+  <p>Your staff account does not currently have permission to view business data.</p>
+{% endif %}
 
 {% endblock %}
