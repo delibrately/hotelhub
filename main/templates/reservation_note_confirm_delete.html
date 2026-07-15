@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}删除内部备注{% endblock %}
+
+{% block content %}
+  <h2 class="titlex">确认删除内部备注</h2>
+  <p>备注ID：#{{ note.id }}</p>
+  <p>所属订单：#{{ note.reservation_id }}</p>
+  <p>创建时间：{{ note.created_at }}</p>
+  <p>是否重要：{% if note.is_important %}是{% else %}否{% endif %}</p>
+  <p>删除后备注正文无法恢复，但操作日志会保留。</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">确认删除</button>
+  </form>
+  <a class="linkx" href="{% url 'reservation_detail' note.reservation_id %}">取消</a>
+{% endblock %}

@@ -86,6 +86,37 @@ class Reservation(models.Model):
         )
 
 
+class ReservationNote(models.Model):
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.CASCADE,
+        related_name="notes",
+    )
+    content = models.TextField(max_length=5000)
+    is_important = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reservation_notes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["reservation", "created_at"],
+                name="main_note_res_created_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Reservation note #{self.pk} for reservation #{self.reservation_id}"
+
+
 class AdminOperationLog(models.Model):
     class Action(models.TextChoices):
         RESERVATION_CREATED = "reservation_created", "创建订单"
@@ -99,11 +130,28 @@ class AdminOperationLog(models.Model):
         ROOM_UPDATED = "room_updated", "修改房间"
         GUEST_CREATED = "guest_created", "创建客人"
         GUEST_UPDATED = "guest_updated", "修改客人"
+        RESERVATION_NOTE_CREATED = (
+            "reservation_note_created",
+            "创建订单备注",
+        )
+        RESERVATION_NOTE_UPDATED = (
+            "reservation_note_updated",
+            "修改订单备注",
+        )
+        RESERVATION_NOTE_DELETED = (
+            "reservation_note_deleted",
+            "删除订单备注",
+        )
+        RESERVATION_NOTE_IMPORTANCE_CHANGED = (
+            "reservation_note_importance_changed",
+            "修改订单备注重要标记",
+        )
 
     class TargetType(models.TextChoices):
         RESERVATION = "reservation", "订单"
         ROOM = "room", "房间"
         GUEST = "guest", "客人"
+        RESERVATION_NOTE = "reservation_note", "订单备注"
 
     operator = models.ForeignKey(
         settings.AUTH_USER_MODEL,

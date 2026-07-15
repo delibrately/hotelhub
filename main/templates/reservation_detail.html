@@ -20,4 +20,40 @@
       <a class="linkx" href="{{ action.url }}">{{ action.label }}</a>
     {% endfor %}
   {% endif %}
+
+  {% if can_view_reservation_notes %}
+    <section aria-labelledby="internal-notes-heading">
+      <h3 class="titlex" id="internal-notes-heading">内部备注</h3>
+      {% if can_add_reservation_notes %}
+        <a class="linkx" href="{% url 'reservation_note_create' reservation.id %}">添加内部备注</a>
+      {% endif %}
+
+      {% for row in reservation_note_rows %}
+        <article class="reservation-note{% if row.note.is_important %} reservation-note-important{% endif %}">
+          {% if row.note.is_important %}
+            <p><strong aria-label="重要备注">重要</strong></p>
+          {% endif %}
+          <p>
+            创建人：
+            {% if row.note.created_by %}
+              {{ row.note.created_by.get_username }}
+            {% else %}
+              已删除用户
+            {% endif %}
+          </p>
+          <p>创建时间：{{ row.note.created_at }}</p>
+          <p>最后修改时间：{{ row.note.updated_at }}</p>
+          <div class="reservation-note-content">{{ row.note.content|linebreaksbr }}</div>
+          {% if row.can_edit %}
+            <a class="linkx" href="{% url 'reservation_note_update' reservation.id row.note.id %}">编辑备注</a>
+          {% endif %}
+          {% if can_delete_reservation_notes %}
+            <a class="linkx" href="{% url 'reservation_note_delete' reservation.id row.note.id %}">删除备注</a>
+          {% endif %}
+        </article>
+      {% empty %}
+        <p>暂无内部备注。</p>
+      {% endfor %}
+    </section>
+  {% endif %}
   {% endblock %}

@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 
 from .forms import ReservationForm
-from .models import AdminOperationLog, Reservation
+from .models import AdminOperationLog, Reservation, ReservationNote
 from .services import (
     ReservationTransitionError,
     cancel_reservation,
@@ -112,6 +112,39 @@ class ReservationAdmin(admin.ModelAdmin):
             mark_reservation_no_show,
             "标记未到店",
         )
+
+
+@admin.register(ReservationNote)
+class ReservationNoteAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "reservation",
+        "created_by",
+        "is_important",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("is_important", "created_at")
+    search_fields = ("=reservation__id",)
+    list_select_related = ("reservation", "created_by")
+    ordering = ("-created_at", "-id")
+    readonly_fields = (
+        "reservation",
+        "content",
+        "is_important",
+        "created_by",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(AdminOperationLog)

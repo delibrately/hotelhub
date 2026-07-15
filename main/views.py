@@ -1,5 +1,7 @@
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,18 +16,25 @@ from accounts.mixins import (
 from guest.models import Guest
 from room.models import Room
 
-from .forms import ReservationForm
-from .models import AdminOperationLog, Reservation
+from .forms import ReservationForm, ReservationNoteForm
+from .models import AdminOperationLog, Reservation, ReservationNote
 from .services import (
     ReservationTransitionError,
     cancel_reservation,
+    can_add_reservation_notes,
+    can_delete_reservation_note,
+    can_edit_reservation_note,
+    can_view_reservation_notes,
     check_in_reservation,
     check_out_reservation,
     confirm_reservation,
+    create_reservation_note,
+    delete_reservation_note,
     get_allowed_transitions,
     log_reservation_created,
     log_reservation_updated,
     mark_reservation_no_show,
+    update_reservation_note,
 )
 
 
@@ -162,7 +171,17 @@ class ReservationDetailView(StaffPermissionRequiredMixin, DetailView):
     permission_required = "main.view_reservation"
 
     def get_queryset(self):
-        return super().get_queryset().select_related("room", "guest")
+        queryset = super().get_queryset().select_related("room", "guest")
+        if can_view_reservation_notes(self.request.user):
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "notes",
+                    queryset=ReservationNote.objects.select_related(
+                        "created_by"
+                    ).order_by("-created_at", "-id"),
+                )
+            )
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -183,7 +202,167 @@ class ReservationDetailView(StaffPermissionRequiredMixin, DetailView):
                 )
         context["can_manage_status"] = can_manage_status
         context["status_actions"] = status_actions
+        can_view_notes = can_view_reservation_notes(self.request.user)
+        context["can_view_reservation_notes"] = can_view_notes
+        context["can_add_reservation_notes"] = (
+            can_view_notes and can_add_reservation_notes(self.request.user)
+        )
+        context["can_delete_reservation_notes"] = can_delete_reservation_note(
+            self.request.user
+        )
+        context["reservation_note_rows"] = []
+        if can_view_notes:
+            context["reservation_note_rows"] = [
+                {
+                    "note": note,
+                    "can_edit": can_edit_reservation_note(
+                        self.request.user, note
+                    ),
+                }
+                for note in self.object.notes.all()
+            ]
         return context
+
+
+class ReservationNoteCreateView(StaffPermissionRequiredMixin, View):
+    permission_required = (
+        "main.view_reservation",
+        "main.add_reservationnote",
+    )
+    template_name = "reservation_note_form.html"
+
+    def get_reservation(self, reservation_pk):
+        return get_object_or_404(Reservation, pk=reservation_pk)
+
+    def render_form(self, request, reservation, form):
+        return render(
+            request,
+            self.template_name,
+            {
+                "reservation": reservation,
+                "form": form,
+                "title": "添加内部备注",
+                "submit_label": "添加备注",
+            },
+        )
+
+    def get(self, request, reservation_pk):
+        reservation = self.get_reservation(reservation_pk)
+        return self.render_form(request, reservation, ReservationNoteForm())
+
+    def post(self, request, reservation_pk):
+        reservation = self.get_reservation(reservation_pk)
+        form = ReservationNoteForm(request.POST)
+        if form.is_valid():
+            try:
+                create_reservation_note(
+                    reservation_id=reservation.pk,
+                    content=form.cleaned_data["content"],
+                    is_important=form.cleaned_data["is_important"],
+                    operator=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc)
+            else:
+                messages.success(request, "内部备注已添加。")
+                return redirect("reservation_detail", pk=reservation.pk)
+        return self.render_form(request, reservation, form)
+
+
+class ReservationNoteUpdateView(StaffPermissionRequiredMixin, View):
+    permission_required = (
+        "main.view_reservation",
+        "main.view_reservationnote",
+        "main.change_reservationnote",
+    )
+    template_name = "reservation_note_form.html"
+
+    def get_note(self, reservation_pk, note_pk):
+        note = get_object_or_404(
+            ReservationNote.objects.select_related("reservation", "created_by"),
+            pk=note_pk,
+            reservation_id=reservation_pk,
+        )
+        if not can_edit_reservation_note(self.request.user, note):
+            raise PermissionDenied
+        return note
+
+    def render_form(self, request, note, form):
+        return render(
+            request,
+            self.template_name,
+            {
+                "reservation": note.reservation,
+                "note": note,
+                "form": form,
+                "title": "修改内部备注",
+                "submit_label": "保存备注",
+            },
+        )
+
+    def get(self, request, reservation_pk, note_pk):
+        note = self.get_note(reservation_pk, note_pk)
+        return self.render_form(
+            request,
+            note,
+            ReservationNoteForm(instance=note),
+        )
+
+    def post(self, request, reservation_pk, note_pk):
+        note = self.get_note(reservation_pk, note_pk)
+        form = ReservationNoteForm(request.POST, instance=note)
+        if form.is_valid():
+            try:
+                _, changed_fields = update_reservation_note(
+                    reservation_id=reservation_pk,
+                    note_id=note.pk,
+                    content=form.cleaned_data["content"],
+                    is_important=form.cleaned_data["is_important"],
+                    operator=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc)
+            else:
+                if changed_fields:
+                    messages.success(request, "内部备注已更新。")
+                else:
+                    messages.info(request, "内部备注没有变化。")
+                return redirect("reservation_detail", pk=reservation_pk)
+        return self.render_form(request, note, form)
+
+
+class ReservationNoteDeleteView(StaffRequiredMixin, View):
+    template_name = "reservation_note_confirm_delete.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if (
+            request.user.is_authenticated
+            and request.user.is_staff
+            and not can_delete_reservation_note(request.user)
+        ):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_note(self, reservation_pk, note_pk):
+        return get_object_or_404(
+            ReservationNote.objects.select_related("reservation"),
+            pk=note_pk,
+            reservation_id=reservation_pk,
+        )
+
+    def get(self, request, reservation_pk, note_pk):
+        note = self.get_note(reservation_pk, note_pk)
+        return render(request, self.template_name, {"note": note})
+
+    def post(self, request, reservation_pk, note_pk):
+        note = self.get_note(reservation_pk, note_pk)
+        delete_reservation_note(
+            reservation_id=reservation_pk,
+            note_id=note.pk,
+            operator=request.user,
+        )
+        messages.success(request, "内部备注已删除。")
+        return redirect("reservation_detail", pk=reservation_pk)
 
 
 class ReservationListView(

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+  <h2 class="titlex">{{ title }}</h2>
+  <p>所属订单：#{{ reservation.id }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">{{ submit_label }}</button>
+  </form>
+  <a class="linkx" href="{% url 'reservation_detail' reservation.id %}">返回订单详情</a>
+{% endblock %}

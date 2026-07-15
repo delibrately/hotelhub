@@ -1,14 +1,46 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from room.models import Room
 
-from .models import AdminOperationLog, Reservation
+from .models import AdminOperationLog, Reservation, ReservationNote
 
 
 class ReservationTransitionError(Exception):
     """Raised when a requested reservation status transition is not allowed."""
+
+
+def _is_staff_user(user):
+    return bool(user and user.is_authenticated and user.is_staff)
+
+
+def can_view_reservation_notes(user):
+    return _is_staff_user(user) and user.has_perms(
+        ("main.view_reservation", "main.view_reservationnote")
+    )
+
+
+def can_add_reservation_notes(user):
+    return _is_staff_user(user) and user.has_perms(
+        ("main.view_reservation", "main.add_reservationnote")
+    )
+
+
+def can_edit_reservation_note(user, note):
+    if not _is_staff_user(user):
+        return False
+    if user.is_superuser:
+        return True
+    return (
+        can_view_reservation_notes(user)
+        and user.has_perm("main.change_reservationnote")
+        and note.created_by_id == user.pk
+    )
+
+
+def can_delete_reservation_note(user):
+    return _is_staff_user(user) and user.is_superuser
 
 
 ALLOWED_TRANSITIONS = {
@@ -99,6 +131,114 @@ def create_operation_log(
         target_id=target_id,
         description=description,
     )
+
+
+@transaction.atomic
+def create_reservation_note(
+    *, reservation_id, content, is_important, operator
+):
+    if not can_add_reservation_notes(operator):
+        raise PermissionDenied("没有添加订单备注的权限。")
+    if type(is_important) is not bool:
+        raise ValidationError({"is_important": "必须提供有效的布尔值。"})
+
+    reservation = Reservation.objects.select_for_update().get(pk=reservation_id)
+    note = ReservationNote(
+        reservation=reservation,
+        content=content.strip() if isinstance(content, str) else "",
+        is_important=is_important,
+        created_by=operator,
+    )
+    note.full_clean()
+    note.save()
+    create_operation_log(
+        operator=operator,
+        action=AdminOperationLog.Action.RESERVATION_NOTE_CREATED,
+        target_type=AdminOperationLog.TargetType.RESERVATION_NOTE,
+        target_id=note.pk,
+        description=(
+            f"Reservation note #{note.pk} was created for "
+            f"reservation #{reservation.pk}."
+        ),
+    )
+    return note
+
+
+@transaction.atomic
+def update_reservation_note(
+    *, reservation_id, note_id, content, is_important, operator
+):
+    if type(is_important) is not bool:
+        raise ValidationError({"is_important": "必须提供有效的布尔值。"})
+
+    note = (
+        ReservationNote.objects.select_for_update()
+        .select_related("reservation", "created_by")
+        .get(pk=note_id, reservation_id=reservation_id)
+    )
+    if not can_edit_reservation_note(operator, note):
+        raise PermissionDenied("没有修改该订单备注的权限。")
+
+    normalized_content = content.strip() if isinstance(content, str) else ""
+    changed_fields = []
+    if note.content != normalized_content:
+        note.content = normalized_content
+        changed_fields.append("content")
+    if note.is_important != is_important:
+        note.is_important = is_important
+        changed_fields.append("is_important")
+
+    note.full_clean()
+    if not changed_fields:
+        return note, ()
+
+    note.save(update_fields=[*changed_fields, "updated_at"])
+    categories = [
+        "importance" if field == "is_important" else field
+        for field in changed_fields
+    ]
+    action = (
+        AdminOperationLog.Action.RESERVATION_NOTE_IMPORTANCE_CHANGED
+        if changed_fields == ["is_important"]
+        else AdminOperationLog.Action.RESERVATION_NOTE_UPDATED
+    )
+    create_operation_log(
+        operator=operator,
+        action=action,
+        target_type=AdminOperationLog.TargetType.RESERVATION_NOTE,
+        target_id=note.pk,
+        description=(
+            f"Reservation note #{note.pk} for reservation "
+            f"#{note.reservation_id} updated fields: {', '.join(categories)}."
+        ),
+    )
+    return note, tuple(changed_fields)
+
+
+@transaction.atomic
+def delete_reservation_note(*, reservation_id, note_id, operator):
+    note = (
+        ReservationNote.objects.select_for_update()
+        .select_related("reservation")
+        .get(pk=note_id, reservation_id=reservation_id)
+    )
+    if not can_delete_reservation_note(operator):
+        raise PermissionDenied("只有超级管理员可以删除订单备注。")
+
+    deleted_note_id = note.pk
+    target_reservation_id = note.reservation_id
+    note.delete()
+    create_operation_log(
+        operator=operator,
+        action=AdminOperationLog.Action.RESERVATION_NOTE_DELETED,
+        target_type=AdminOperationLog.TargetType.RESERVATION_NOTE,
+        target_id=deleted_note_id,
+        description=(
+            f"Reservation note #{deleted_note_id} was deleted from "
+            f"reservation #{target_reservation_id}."
+        ),
+    )
+    return target_reservation_id
 
 
 @transaction.atomic

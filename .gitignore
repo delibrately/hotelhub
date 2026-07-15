@@ -1,4 +1,5 @@
 # Virtual environment
+env/
 venv/
 .venv/
 
@@ -33,6 +34,8 @@ local_settings.py
 # Ignore the IDE configuration files
 .vscode/
 .idea/
+*.swp
+*.swo
 *.sublime-project
 *.sublime-workspace
 *.pyc
@@ -42,3 +45,6 @@ local_settings.py
 # Ignore pipenv virtual environment
 Pipfile
 Pipfile.lock
+
+# Operating system metadata
+.DS_Store
