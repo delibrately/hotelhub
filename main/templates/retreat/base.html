@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#263d32">
+  <title>{% block title %}白车轴·度假｜在山谷里，慢慢过一天{% endblock %}</title>
+  <meta name="description" content="白车轴·度假，林间客房、草地露营与溪谷时光。探索林间宿、半山度假屋、阳光房和轻奢帐篷，提前联系，开启山谷假期。">
+  <link rel="icon" type="image/svg+xml" href="{% static 'retreat/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'retreat/site.css' %}">
+  {% block preload %}{% endblock %}
+  <script src="{% static 'retreat/site.js' %}" defer></script>
+</head>
+<body class="{% block bodyclass %}{% endblock %}">
+<a class="skip-link" href="#main">跳至正文</a>
+<header class="site-header" id="site-header">
+  <a class="brand" href="{% url 'retreat_home' %}" aria-label="白车轴度假首页"><span class="brand-cn">白车轴<span class="brand-dot">·</span>度假</span><span class="brand-en">WHITE AXLE RETREAT</span></a>
+  <nav class="desktop-nav" aria-label="主导航"><a href="{% url 'retreat_home' %}#stay">住在白车轴</a><a href="{% url 'retreat_home' %}#experience">山谷时光</a><a href="{% url 'retreat_home' %}#gather">相聚于此</a><a href="{% url 'retreat_home' %}#visit">到访指南</a></nav>
+  <button class="header-book" data-book>咨询预订 <span aria-hidden="true">↗</span></button>
+  <button class="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="打开导航"><span></span><span></span></button>
+</header>
+<nav class="mobile-nav" id="mobile-nav" aria-label="手机导航" hidden><a href="{% url 'retreat_home' %}#stay">住在白车轴 <span>01</span></a><a href="{% url 'retreat_home' %}#experience">山谷时光 <span>02</span></a><a href="{% url 'retreat_home' %}#gather">相聚于此 <span>03</span></a><a href="{% url 'retreat_home' %}#visit">到访指南 <span>04</span></a><p>林间 · 溪谷 · 慢住</p></nav>
+<main id="main">{% block content %}{% endblock %}</main>
+<footer class="site-footer"><div><a class="brand" href="{% url 'retreat_home' %}"><span class="brand-cn">白车轴 · 度假</span><span class="brand-en">WHITE AXLE RETREAT</span></a><p>把时间，留给自然与身边的人。</p></div><div class="footer-contact"><span>期待在山谷相见</span><a href="tel:13044350891">130 4435 0891 ↗</a><span>预订微信　13039190891</span></div><div class="footer-bottom"><span>© {% now 'Y' %} 白车轴·度假</span><span>林间客房 / 草地露营 / 溪谷时光</span><a href="#main">回到顶部 ↑</a></div></footer>
+<div class="mobile-book"><a href="tel:13044350891">电话咨询 ↗</a><button data-book{% if room %} data-room="{{ room.name }}"{% endif %}>咨询预订 <span>→</span></button></div>
+<dialog class="booking-dialog" id="booking-dialog" aria-labelledby="booking-title"><button class="dialog-close" data-close aria-label="关闭预订咨询">×</button><span class="eyebrow">YOUR NEXT SLOW ESCAPE</span><h2 id="booking-title">给自己，<br>留一个山谷假期。</h2><p id="booking-context">与我们聊聊你的到访计划。</p><div class="contact-row"><div><small>预订微信</small><strong id="wechat-number">13039190891</strong></div><button class="copy-button" data-copy="13039190891">复制微信号</button></div><a class="button solid" href="tel:13044350891">电话咨询　130 4435 0891 <span>↗</span></a><p class="booking-note">请告知到访日期、人数及心仪房型，我们会为你确认房价与空房。园区仅接待已预订客人，请确认后再出发。</p><p class="copy-status" role="status" aria-live="polite"></p></dialog>
+<dialog class="lightbox" id="lightbox" aria-label="实景照片预览"><button class="dialog-close" data-close aria-label="关闭照片预览">×</button><button class="gallery-prev" aria-label="上一张照片">←</button><figure><img src="" alt=""><figcaption></figcaption></figure><button class="gallery-next" aria-label="下一张照片">→</button><span class="gallery-count" aria-live="polite"></span></dialog>
+</body></html>

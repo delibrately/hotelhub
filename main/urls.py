@@ -1,7 +1,10 @@
 from django.urls import path
 from . import views
+from . import retreat
 
 urlpatterns = [
+    path('stay/', retreat.retreat_home, name='retreat_home'),
+    path('stay/rooms/<slug:slug>/', retreat.retreat_room, name='retreat_room'),
     path('modd', views.ModdView.as_view(), name="modd"),
     path('', views.DashboardView.as_view(), name='dashboard'),
     path('reservations/', views.ReservationListView.as_view(), name='reservation_list'),

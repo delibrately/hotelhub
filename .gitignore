@@ -48,3 +48,6 @@ Pipfile.lock
 
 # Operating system metadata
 .DS_Store
+
+# Generated public website
+.pages-build/
