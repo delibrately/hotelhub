@@ -50,3 +50,19 @@
 导出命令：`.venv/bin/python scripts/export_retreat.py --base /hotelhub/`
 
 导出仅包含首页、四个房型页和 `main/static/retreat` 资源；不会导出酒店管理后台、数据库、账号、订单或环境配置。静态站点的咨询、复制微信号、电话链接及图库交互仍可使用。修改源模板或素材后，需要重新导出并更新发布分支。
+
+## White clover 品牌标志
+
+2026-09-23：英文名称统一为 `White clover`，导航与页脚加入用户提供的 logo。采用暖纸色背景，透明图案直接融入页面；移动端缩小标志并保留品牌文字。
+
+- 原始文件：`main/static/retreat/brand/white-clover-logo.png`，保留原图。
+- 透明版本：`main/static/retreat/brand/white-clover-transparent.png`，1378 × 1141 RGBA PNG。
+- 处理方式：内置 imagegen 图片编辑。去除外围白底、保留三顶帐篷的白色；页面通过 CSS 隐藏图片外围空白。
+- 验证：背景 alpha 为 0，帐篷白色保留；手机与桌面布局已截图检查。
+- 截图：`screenshots/retreat/mobile-logo.png`、`screenshots/retreat/desktop-logo.png`。
+
+最终图像编辑提示词：
+
+```text
+Use case: background-extraction. Edit target: the provided original White clover 白车轴 logo. Remove ONLY the white exterior background and the white background within letter counters; output true transparent PNG alpha, not a checkerboard image. CRITICAL: preserve all THREE WHITE TENTS INSIDE THE NAVY MOUNTAINS, their white fabric must remain opaque white. Preserve original navy mountains, curved baseline, yellow moon and four yellow stars, exact text 'White clover' and '白 车 轴', all shapes, typography, proportions, colors and layout. No redesign, no added text, no shadows, no outline. Crop excessive empty canvas to the entire logo bounding box with small transparent padding, including all lettering. Result must be an exact clean background removal asset for a website.
+```
